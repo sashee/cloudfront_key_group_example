@@ -9,10 +9,10 @@ resource "aws_s3_bucket" "protected" {
 }
 
 resource "aws_s3_bucket_object" "secret_txt" {
-  bucket = aws_s3_bucket.protected.bucket
-  key    = "secret.txt"
-  content = "This is a secret text!"
-	content_type = "text/html"
+  bucket       = aws_s3_bucket.protected.bucket
+  key          = "secret.txt"
+  content      = "This is a secret text!"
+  content_type = "text/html"
 }
 
 resource "aws_s3_bucket_policy" "default" {
@@ -43,7 +43,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     }
   }
 
-  enabled             = true
+  enabled = true
 
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -61,8 +61,8 @@ resource "aws_cloudfront_distribution" "distribution" {
       }
     }
     viewer_protocol_policy = "https-only"
-		compress = true
-		trusted_key_groups = [aws_cloudfront_key_group.cf_keygroup.id]
+    compress               = true
+    trusted_key_groups     = [aws_cloudfront_key_group.cf_keygroup.id]
   }
 
   restrictions {
@@ -74,8 +74,8 @@ resource "aws_cloudfront_distribution" "distribution" {
   viewer_certificate {
     cloudfront_default_certificate = true
   }
-	price_class = "PriceClass_100"
-	is_ipv6_enabled = true
+  price_class     = "PriceClass_100"
+  is_ipv6_enabled = true
 }
 
 resource "random_id" "id" {
@@ -83,12 +83,12 @@ resource "random_id" "id" {
 }
 
 resource "tls_private_key" "keypair" {
-  algorithm   = "RSA"
+  algorithm = "RSA"
 }
 
 resource "aws_ssm_parameter" "private_key" {
-	name = "${random_id.id.hex}-private-key"
-	type = "SecureString"
+  name  = "${random_id.id.hex}-private-key"
+  type  = "SecureString"
   value = tls_private_key.keypair.private_key_pem
 }
 
@@ -97,22 +97,22 @@ resource "aws_cloudfront_public_key" "cf_key" {
 }
 
 resource "aws_cloudfront_key_group" "cf_keygroup" {
-  items   = [aws_cloudfront_public_key.cf_key.id]
-  name    = "${random_id.id.hex}-group"
+  items = [aws_cloudfront_public_key.cf_key.id]
+  name  = "${random_id.id.hex}-group"
 }
 
 data "external" "build" {
-	program = ["bash", "-c", <<EOT
+  program = ["bash", "-c", <<EOT
 (npm ci) >&2 && echo "{\"dest\": \".\"}"
 EOT
-]
-	working_dir = "${path.module}/src"
+  ]
+  working_dir = "${path.module}/src"
 }
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "/tmp/${random_id.id.hex}-lambda.zip"
-	source_dir  = "${data.external.build.working_dir}/${data.external.build.result.dest}"
+  source_dir  = "${data.external.build.working_dir}/${data.external.build.result.dest}"
 }
 
 resource "aws_lambda_function" "lambda" {
@@ -126,9 +126,9 @@ resource "aws_lambda_function" "lambda" {
   role    = aws_iam_role.lambda_exec.arn
   environment {
     variables = {
-      CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.distribution.domain_name
-			KEYPAIR_ID = aws_cloudfront_public_key.cf_key.id
-			PRIVATE_KEY_PARAMETER = aws_ssm_parameter.private_key.name
+      CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.distribution.domain_name
+      KEYPAIR_ID            = aws_cloudfront_public_key.cf_key.id
+      PRIVATE_KEY_PARAMETER = aws_ssm_parameter.private_key.name
     }
   }
 }
@@ -136,7 +136,7 @@ resource "aws_lambda_function" "lambda" {
 data "aws_iam_policy_document" "lambda_exec_role_policy" {
   statement {
     actions = [
-			"ssm:GetParameter",
+      "ssm:GetParameter",
     ]
     resources = [
       aws_ssm_parameter.private_key.arn
@@ -197,5 +197,5 @@ resource "aws_lambda_permission" "apigw" {
 }
 
 output "api_url" {
-	value = aws_apigatewayv2_api.api.api_endpoint
+  value = aws_apigatewayv2_api.api.api_endpoint
 }
