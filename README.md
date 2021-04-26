@@ -21,9 +21,7 @@ and you can add keys under that. Then the signing process can use a key that is 
 Go to the URL that Terraform prints when you deploy the stack. It is an API Gateway endpoint that calls a Lambda function. The function signs a URL and redirects
 to is. You'll see an object in an S3 bucket that is only accessible using signed URLs.
 
-Here's a video showing the process:
-
-![](key_group_example_usage.mp4)
+[Here's a video showing the process](key_group_example_usage.mp4)
 
 ## Cleanup
 
